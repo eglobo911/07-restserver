@@ -64,7 +64,7 @@ app.get("/categoria/:id", (req, res) => {
 // ============================
 // Crear una nueva categoria
 // ============================
-app.post("/categoria", (req, res) => {
+app.post("/categoria", verificaToken, (req, res) => {
   let body = req.body;
 
   let categoria = new Categoria({
