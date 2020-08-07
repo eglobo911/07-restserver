@@ -64,7 +64,7 @@ app.get("/categoria/:id", (req, res) => {
 // ============================
 // Crear una nueva categoria
 // ============================
-app.post("/categoria", verificaToken, (req, res) => {
+app.post("/categoria", (req, res) => {
   let body = req.body;
 
   let categoria = new Categoria({
@@ -97,7 +97,7 @@ app.post("/categoria", verificaToken, (req, res) => {
 // ============================
 // Actualizar una categoria
 // ============================
-app.put("/categoria/:id", verificaToken, (req, res) => {
+app.put("/categoria/:id", (req, res) => {
   let id = req.params.id;
   let body = req.body;
 
@@ -135,35 +135,31 @@ app.put("/categoria/:id", verificaToken, (req, res) => {
 // ============================
 // Borrar una categoria
 // ============================
-app.delete(
-  "/categoria/:id",
-  [verificaToken, verificaAdmin_Role],
-  (req, res) => {
-    let id = req.params.id;
+app.delete("/categoria/:id", [verificaAdmin_Role], (req, res) => {
+  let id = req.params.id;
 
-    Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
-      if (err) {
-        return res.status(500).json({
-          ok: false,
-          err,
-        });
-      }
-
-      if (!categoriaDB) {
-        return res.status(400).json({
-          ok: false,
-          err: {
-            message: "Ese id no existe",
-          },
-        });
-      }
-
-      res.json({
-        ok: true,
-        message: "Categoria borrada",
+  Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
+    if (err) {
+      return res.status(500).json({
+        ok: false,
+        err,
       });
+    }
+
+    if (!categoriaDB) {
+      return res.status(400).json({
+        ok: false,
+        err: {
+          message: "Ese id no existe",
+        },
+      });
+    }
+
+    res.json({
+      ok: true,
+      message: "Categoria borrada",
     });
-  }
-);
+  });
+});
 
 module.exports = app;
