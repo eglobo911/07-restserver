@@ -1,16 +1,31 @@
 const express = require("express");
 
-const { verificaToken } = require("../middlewares/autenticacion");
-
-let Categoria = require("../models/categoria");
+const {
+  verificaToken,
+  verificaAdmin_Role,
+} = require("../middlewares/autenticacion");
 
 let app = express();
+
+let Categoria = require("../models/categoria");
 
 // ============================
 // Mostrar todas las categorias
 // ============================
 app.get("/categoria", (req, res) => {
-  res.json("get todas las categorias");
+  Categoria.find({}).exec((err, categorias) => {
+    if (err) {
+      return res.status(500).json({
+        ok: false,
+        err,
+      });
+    }
+
+    res.json({
+      ok: true,
+      categorias,
+    });
+  });
 });
 
 // ============================
@@ -18,58 +33,136 @@ app.get("/categoria", (req, res) => {
 // ============================
 app.get("/categoria/:id", (req, res) => {
   //Categoria.findById()
-  res.json("get una categoria por id");
+  //res.json("get una categoria por id");
+  let id = req.params.id;
+
+  Categoria.findById(id, (err, categoriaDB) => {
+    if (err) {
+      return res.status(500).json({
+        ok: false,
+        err,
+      });
+    }
+
+    if (!categoriaDB) {
+      return res.status(400).json({
+        ok: false,
+        err: {
+          message: "Ese id no existe",
+        },
+      });
+    }
+
+    res.json({
+      ok: true,
+      categoria: categoriaDB,
+    });
+  });
 });
 
 // ============================
 // Crear una nueva categoria
 // ============================
-app.post("/categoria", (req, res) => {
-  // verificaToken,
-  // regresa la nueva categoria
-  // req.usuario._id
+app.post("/categoria", verificaToken, (req, res) => {
   let body = req.body;
 
-  if (body.descripcion === undefined) {
-    res.status(400).json({
-      ok: false,
-      mensaje: "Envie una descripcion",
-    });
-  } else {
-    let categoria = new Categoria({
-      descripcion: body.descripcion,
-      usuario: body.usuario,
-    });
+  let categoria = new Categoria({
+    descripcion: body.descripcion,
+    usuario: req.usuario._id,
+  });
 
-    categoria.save((err, categoriaDB) => {
-      if (err) {
-        return res.status(400).json({
-          ok: false,
-          err,
-        });
-      }
-      res.json({
-        ok: true,
-        categoria: categoriaDB,
+  categoria.save((err, categoriaDB) => {
+    if (err) {
+      return res.status(500).json({
+        ok: false,
+        err,
       });
+    }
+
+    if (!categoriaDB) {
+      return res.status(400).json({
+        ok: false,
+        err,
+      });
+    }
+
+    res.json({
+      ok: false,
+      categoria: categoriaDB,
     });
-  }
+  });
 });
 
 // ============================
 // Actualizar una categoria
 // ============================
-app.put("/categoria/:id", (req, res) => {
-  res.json("actualizar una categoria por id");
+app.put("/categoria/:id", verificaToken, (req, res) => {
+  let id = req.params.id;
+  let body = req.body;
+
+  let descCategoria = {
+    descripcion: body.descripcion,
+  };
+
+  Categoria.findByIdAndUpdate(
+    id,
+    descCategoria,
+    { new: true, runValidators: true },
+    (err, categoriaDB) => {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          err,
+        });
+      }
+
+      if (!categoriaDB) {
+        return res.status(400).json({
+          ok: false,
+          err,
+        });
+      }
+
+      res.json({
+        ok: false,
+        categoria: categoriaDB,
+      });
+    }
+  );
 });
 
 // ============================
 // Borrar una categoria
 // ============================
-app.delete("/categoria/:id", (req, res) => {
-  // solo un administrador puede borrar categorias
-  // Categoria.findByIdAndRmove
-  res.json("Borrar una categoria por id");
-});
+app.delete(
+  "/categoria/:id",
+  [verificaToken, verificaAdmin_Role],
+  (req, res) => {
+    let id = req.params.id;
+
+    Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          err,
+        });
+      }
+
+      if (!categoriaDB) {
+        return res.status(400).json({
+          ok: false,
+          err: {
+            message: "Ese id no existe",
+          },
+        });
+      }
+
+      res.json({
+        ok: true,
+        message: "Categoria borrada",
+      });
+    });
+  }
+);
 
 module.exports = app;
