@@ -12,7 +12,7 @@ let Categoria = require("../models/categoria");
 // ============================
 // Obtener todas las categorias
 // ============================
-app.get("/categoria", (req, res) => {
+app.get("/categoria", verificaToken, (req, res) => {
   Categoria.find({})
     .sort("descripcion")
     .populate("usuario", "nombre email")
@@ -34,7 +34,7 @@ app.get("/categoria", (req, res) => {
 // ============================
 // Obtener una categoria por id
 // ============================
-app.get("/categoria/:id", (req, res) => {
+app.get("/categoria/:id", verificaToken, (req, res) => {
   let id = req.params.id;
 
   Categoria.findById(id, (err, categoriaDB) => {
@@ -97,7 +97,7 @@ app.post("/categoria", verificaToken, (req, res) => {
 // ============================
 // Actualizar una categoria
 // ============================
-app.put("/categoria/:id", (req, res) => {
+app.put("/categoria/:id", verificaToken, (req, res) => {
   let id = req.params.id;
   let body = req.body;
 
@@ -135,31 +135,35 @@ app.put("/categoria/:id", (req, res) => {
 // ============================
 // Borrar una categoria
 // ============================
-app.delete("/categoria/:id", [verificaAdmin_Role], (req, res) => {
-  let id = req.params.id;
+app.delete(
+  "/categoria/:id",
+  [verificaToken, verificaAdmin_Role],
+  (req, res) => {
+    let id = req.params.id;
 
-  Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
-    if (err) {
-      return res.status(500).json({
-        ok: false,
-        err,
+    Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          err,
+        });
+      }
+
+      if (!categoriaDB) {
+        return res.status(400).json({
+          ok: false,
+          err: {
+            message: "Ese id no existe",
+          },
+        });
+      }
+
+      res.json({
+        ok: true,
+        message: "Categoria borrada",
       });
-    }
-
-    if (!categoriaDB) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: "Ese id no existe",
-        },
-      });
-    }
-
-    res.json({
-      ok: true,
-      message: "Categoria borrada",
     });
-  });
-});
+  }
+);
 
 module.exports = app;
